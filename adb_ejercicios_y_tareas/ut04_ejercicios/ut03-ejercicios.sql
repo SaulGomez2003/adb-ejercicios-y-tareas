@@ -230,6 +230,158 @@ DROP TABLE IF EXISTS bibliotecas;
 
 -- 20. Eliminar la base de datos 'biblioteca'
 DROP DATABASE IF EXISTS biblioteca;
+-- EJERCICIO 4: Departamento y Empleados (1:N)
+-- Crear base de datos universidad
+CREATE DATABASE universidad CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Modificar collation
+ALTER DATABASE universidad COLLATE utf8mb4_general_ci;
+
+USE universidad;
+
+-- Crear tabla alumnos
+CREATE TABLE alumnos (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+-- Crear tabla asignaturas
+CREATE TABLE asignaturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+-- Crear tabla intermedia matriculas
+CREATE TABLE matriculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    alumno_id INT UNSIGNED,
+    asignatura_id INT UNSIGNED,
+    fecha_matricula DATE NOT NULL,
+    FOREIGN KEY (alumno_id) REFERENCES alumnos(id),
+    FOREIGN KEY (asignatura_id) REFERENCES asignaturas(id)
+);
+
+-- Modificar tabla matriculas para agregar columna nota
+ALTER TABLE matriculas ADD COLUMN nota DECIMAL(4,2);
+
+-- Cambiar tamaño del campo nombre en asignaturas
+ALTER TABLE asignaturas MODIFY COLUMN nombre VARCHAR(150) NOT NULL;
+
+-- Eliminar la columna nota de matriculas
+ALTER TABLE matriculas DROP COLUMN nota;
+
+-- Añadir índice a nombre en asignaturas
+CREATE INDEX idx_nombre ON asignaturas(nombre);
+
+-- Insertar datos
+INSERT INTO alumnos (nombre) VALUES ('Luis Gómez'), ('María Fernández'), ('Carlos Ruiz');
+INSERT INTO asignaturas (nombre) VALUES ('Matemáticas'), ('Física'), ('Historia'), ('Química');
+INSERT INTO matriculas (alumno_id, asignatura_id, fecha_matricula) VALUES
+(1, 1, CURDATE()),
+(2, 2, CURDATE()),
+(3, 3, CURDATE()),
+(1, 2, CURDATE());
+
+-- Consultas
+SELECT a.nombre FROM asignaturas a JOIN matriculas m ON a.id = m.asignatura_id JOIN alumnos al ON al.id = m.alumno_id WHERE al.nombre = 'Luis Gómez';
+SELECT al.nombre FROM alumnos al JOIN matriculas m ON al.id = m.alumno_id JOIN asignaturas a ON a.id = m.asignatura_id WHERE a.nombre = 'Matemáticas';
+
+-- Eliminar inscripción
+DELETE FROM matriculas WHERE alumno_id = 1 AND asignatura_id = 1;
+
+-- Eliminar alumno y sus matrículas
+DELETE FROM matriculas WHERE alumno_id = 1;
+DELETE FROM alumnos WHERE id = 1;
+
+-- Eliminar base de datos
+DROP DATABASE universidad;
+
+-- EJERCICIO 5: Actores y Películas (N:M)
+CREATE DATABASE cine CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER DATABASE cine COLLATE utf8mb4_general_ci;
+
+USE cine;
+
+CREATE TABLE actores (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE peliculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(150) NOT NULL,
+    anio_estreno YEAR NOT NULL
+);
+
+CREATE TABLE actores_peliculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    actor_id INT UNSIGNED,
+    pelicula_id INT UNSIGNED,
+    personaje VARCHAR(100) NOT NULL,
+    FOREIGN KEY (actor_id) REFERENCES actores(id),
+    FOREIGN KEY (pelicula_id) REFERENCES peliculas(id)
+);
+
+ALTER TABLE actores MODIFY COLUMN nombre VARCHAR(150) NOT NULL;
+CREATE INDEX idx_titulo ON peliculas(titulo);
+
+INSERT INTO actores (nombre) VALUES ('Leonardo DiCaprio'), ('Kate Winslet'), ('Tom Hanks');
+INSERT INTO peliculas (titulo, anio_estreno) VALUES ('Titanic', 1997), ('Forrest Gump', 1994), ('Avatar', 2009), ('Inception', 2010);
+INSERT INTO actores_peliculas (actor_id, pelicula_id, personaje) VALUES
+(1, 1, 'Jack Dawson'),
+(2, 1, 'Rose DeWitt Bukater'),
+(3, 2, 'Forrest Gump');
+
+SELECT p.titulo FROM peliculas p JOIN actores_peliculas ap ON p.id = ap.pelicula_id JOIN actores a ON a.id = ap.actor_id WHERE a.nombre = 'Leonardo DiCaprio';
+SELECT a.nombre FROM actores a JOIN actores_peliculas ap ON a.id = ap.actor_id JOIN peliculas p ON p.id = ap.pelicula_id WHERE p.titulo = 'Titanic';
+
+DELETE FROM actores_peliculas WHERE actor_id = 1 AND pelicula_id = 1;
+DELETE FROM actores_peliculas WHERE actor_id = 1;
+DELETE FROM actores WHERE id = 1;
+DROP DATABASE cine;
+
+-- EJERCICIO 6: Alumnos y Cursos (N:M)
+CREATE DATABASE instituto CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER DATABASE instituto COLLATE utf8mb4_general_ci;
+
+USE instituto;
+
+CREATE TABLE profesores (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE cursos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT
+);
+
+CREATE TABLE profesores_cursos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    profesor_id INT UNSIGNED,
+    curso_id INT UNSIGNED,
+    fecha_asignacion DATE NOT NULL,
+    FOREIGN KEY (profesor_id) REFERENCES profesores(id),
+    FOREIGN KEY (curso_id) REFERENCES cursos(id)
+);
+
+ALTER TABLE cursos MODIFY COLUMN nombre VARCHAR(200) NOT NULL;
+CREATE INDEX idx_nombre ON cursos(nombre);
+
+INSERT INTO profesores (nombre) VALUES ('Juan Pérez'), ('Ana Rodríguez'), ('Luis Gómez');
+INSERT INTO cursos (nombre, descripcion) VALUES ('Matemáticas', 'Curso de álgebra y geometría'), ('Física', 'Curso de mecánica y termodinámica'), ('Historia', 'Historia universal'), ('Química', 'Química orgánica');
+INSERT INTO profesores_cursos (profesor_id, curso_id, fecha_asignacion) VALUES
+(1, 1, CURDATE()),
+(2, 2, CURDATE()),
+(3, 3, CURDATE());
+
+SELECT c.nombre FROM cursos c JOIN profesores_cursos pc ON c.id = pc.curso_id JOIN profesores p ON p.id = pc.profesor_id WHERE p.nombre = 'Juan Pérez';
+SELECT p.nombre FROM profesores p JOIN profesores_cursos pc ON p.id = pc.profesor_id JOIN cursos c ON c.id = pc.curso_id WHERE c.nombre = 'Matemáticas';
+
+DELETE FROM profesores_cursos WHERE profesor_id = 1 AND curso_id = 1;
+DELETE FROM profesores_cursos WHERE profesor_id = 1;
+DELETE FROM profesores WHERE id = 1;
+DROP DATABASE instituto;
 
 
 
